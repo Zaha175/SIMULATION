@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <title>Universums-Simulation (Verbessert)</title>
+    <!-- PyScript laden -->
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+
+    <py-config>
+        packages = ["numpy", "plotly"]
+    </py-config>
+    <style>
+      body {
+          font-family: sans-serif;
+          margin: 20px;
+      }
+      h1, h2 {
+          color: #333;
+      }
+      #plot {
+          width: 80%;
+          margin: auto;
+      }
+      .equation {
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+      }
+    </style>
+</head>
+<body>
+    <h1>Universums-Simulation (Verbessert)</h1>
+    <p>Diese Anwendung simuliert den Universumszustand U(t) über 10 Milliarden Jahre, basierend auf der Master-Gleichung.</p>
+
+    <h2>Master-Gleichung</h2>
+      <div class="equation">
+          <p>\[
+          \frac{dU}{dt} = \Lambda(t) - G \cdot \rho_D + (k_1 \cdot \eta + k_2 \cdot T) - \frac{\rho_I}{L}
+          \]</p>
+          <ul>
+              <li>\( U \): Zustand des Universums</li>
+              <li>\( \Lambda(t) \): Dunkle Energie (zeitabhängig)</li>
+              <li>\( G \): Gravitationskonstante</li>
+              <li>\( \rho_D \): Dichte der Dunklen Materie</li>
+              <li>\( k_1, k_2 \): Konstanten für Entropie und Temperatur</li>
+              <li>\( \eta \): Entropie</li>
+              <li>\( T \): Temperatur</li>
+              <li>\( \rho_I \): Informationsdichte</li>
+              <li>\( L \): Rendering-Kapazität</li>
+          </ul>
+      </div>
+
+    <div id="plot"></div>
+
+    <py-script>
+        import numpy as np
+        import plotly.graph_objects as go
+        from js import console
+
+        # Zeitvariable Dunkle Energie (exponentiell abfallend)
+        def Lambda(t):
+            return 0.01 * np.exp(-0.001 * t)  # Langsamerer Abfall
+
+        # Konstanten (realistische Größenordnungen, aber angepasst für die Simulation)
+        G = 6.674e-11  # Gravitationskonstante
+        rho_D = 0.3     # Dichte der Dunklen Materie (vereinfacht)
+        k1 = 0.005       # Einfluss der Entropie (angepasst)
+        k2 = 0.002       # Einfluss der Temperatur (angepasst)
+        eta = 1.5      # Entropie (vereinfacht)
+        T = 2.73       # Temperatur (Hintergrundstrahlung)
+        rho_I = 0.05     # Informationsdichte (vereinfacht)
+        L = 1.0        # Rendering-Kapazität (vereinfacht)
+
+        # Die Differentialgleichung (Master-Gleichung)
+        def dU_dt(U, t):
+            return Lambda(t) - G * rho_D + (k1 * eta + k2 * T) - (rho_I / L)
+
+        # Zeitachse (0 bis 10 Milliarden Jahre, in Millionen Jahren)
+        t_values = np.linspace(0, 10000, 500)  # Weniger Punkte für bessere Performance
+        dt = t_values[1] - t_values[0]       # Zeitschritt
+
+        # Anfangsbedingung und Array für U(t)
+        U_values = np.zeros_like(t_values)
+        U_values[0] = 1.0  # Startwert für U (kann angepasst werden)
+
+
+        # Numerische Integration (Euler-Methode)
+        for i in range(1, len(t_values)):
+          try:
+              # Berechnung der Änderung und Aktualisierung des Zustands
+              dU = dU_dt(U_values[i-1], t_values[i-1]) * dt
+              U_values[i] = U_values[i-1] + dU
+              # Vermeidung von Instabilitäten (optional, aber empfohlen)
+              if U_values[i] < 0:  # U sollte nicht negativ werden
+                  U_values[i] = 0
+          except Exception as e:
+                console.error(f"Fehler bei der Berechnung: {e}")
+                break # Stop der Simulation im Fehlerfall
+
+        # Erstellung des Plots mit Plotly
+        fig = go.Figure(data=[go.Scatter(x=t_values, y=U_values, mode='lines')])
+        fig.update_layout(
+            title="Simulation des Universumszustands U(t)",
+            xaxis_title="Zeit (Millionen Jahre)",
+            yaxis_title="Universumszustand U",
+            template="plotly_white",  # Schöneres Layout
+            hovermode="x unified"    # Verbesserte Hover-Infos
+        )
+
+        # Plot anzeigen
+        display(fig, target="plot")
+
+    </py-script>
+</body>
+</html>
